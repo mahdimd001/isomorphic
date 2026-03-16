@@ -1,0 +1,69 @@
+--pruning-ratio 0.2     --head-pruning-ratio 0.2     --head-dim-pruning-ratio 0.05
+Summary:
+MACs: 17.69 G => 11.35 G
+Params: 87.34 M => 55.58 M
+Loss: 0.6841 => 2.4306
+Accuracy: 0.8333 => 0.4749
+
+
+Summary:
+MACs: 17.69 G => 11.37 G
+Params: 87.34 M => 55.61 M
+Loss: 0.6841 => 2.0019
+Accuracy: 0.8333 => 0.5611
+
+
+
+--pruning-ratio 0.25     --head-pruning-ratio 0.25     --head-dim-pruning-ratio 0.1
+Summary:
+MACs: 17.69 G => 9.92 G
+Params: 87.34 M => 48.47 M
+Loss: 0.6841 => 4.1072
+Accuracy: 0.8333 => 0.2234
+
+
+Summary:
+MACs: 17.69 G => 9.88 G
+Params: 87.34 M => 48.41 M
+Loss: 0.6841 => 4.0139
+Accuracy: 0.8333 => 0.2590
+
+
+
+
+--pruning-ratio 0.5     --head-pruning-ratio 0.5     --head-dim-pruning-ratio 0.25
+Summary:
+MACs: 17.69 G => 4.16 G
+Params: 87.34 M => 20.68 M
+Loss: 0.6841 => 6.8198
+Accuracy: 0.8333 => 0.0039
+
+
+Summary:
+MACs: 17.69 G => 4.18 G
+Params: 87.34 M => 20.74 M
+Loss: 0.6841 => 7.0395
+Accuracy: 0.8333 => 0.0035
+
+
+
+
+bt 500
+--pruning-ratio 0.1     --head-pruning-ratio 0.1     --head-dim-pruning-ratio 0.05
+Summary:
+MACs: 17.69 G => 14.21 G
+Params: 87.34 M => 69.94 M
+Loss: 0.6841 => 0.8931
+Accuracy: 0.8333 => 0.7813
+
+
+Summary:
+MACs: 17.69 G => 14.18 G
+Params: 87.34 M => 69.87 M
+Loss: 0.6841 => 0.9032
+Accuracy: 0.8333 => 0.7802
+
+
+
+
+
