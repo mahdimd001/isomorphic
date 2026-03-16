@@ -27,7 +27,9 @@ import sys
 import timm
 
 import torch_pruning as tp
-import wandb
+#import wandb
+import json
+from datetime import datetime
 
 def kldiv( logits, targets, T=1.0, reduction='batchmean'):
     q = F.log_softmax(logits/T, dim=1)
@@ -90,17 +92,33 @@ def train_one_epoch(model, teacher_model, criterion, optimizer, data_loader, dev
         metric_logger.meters["loss_ce"].update(loss_ce.item())
 
         if torch.distributed.get_rank() == 0 and i % args.print_freq == 0:
+            # try:
+                # wandb.log({
+                #     "train/loss": loss.item(),
+                #     "train/loss_kd": loss_kd.item(),
+                #     "train/loss_ce": loss_ce.item(),
+                #     "train/acc1": acc1.item(),
+                #     "train/acc5": acc5.item(),
+                #     "train/lr": optimizer.param_groups[0]["lr"],
+                #     "misc/img-per-sec": batch_size / (time.time() - start_time),
+                # })
+            # except: pass
+            metrics = {
+                "epoch": epoch,
+                "step": i,
+                "train/loss": loss.item(),
+                "train/loss_kd": loss_kd.item(),
+                "train/loss_ce": loss_ce.item(),
+                "train/acc1": acc1.item(),
+                "train/acc5": acc5.item(),
+                "train/lr": optimizer.param_groups[0]["lr"],
+                "misc/img-per-sec": batch_size / (time.time() - start_time),
+            }
             try:
-                wandb.log({
-                    "train/loss": loss.item(),
-                    "train/loss_kd": loss_kd.item(),
-                    "train/loss_ce": loss_ce.item(),
-                    "train/acc1": acc1.item(),
-                    "train/acc5": acc5.item(),
-                    "train/lr": optimizer.param_groups[0]["lr"],
-                    "misc/img-per-sec": batch_size / (time.time() - start_time),
-                })
-            except: pass
+                with open(args.log_file, "a") as f:
+                    f.write(json.dumps(metrics) + "\n")
+            except Exception as e:
+                print(f"Failed to write to log file: {e}")
             
 def evaluate(model, criterion, data_loader, device, print_freq=100, log_suffix=""):
     model.eval()
@@ -348,13 +366,26 @@ def main(args):
     print(args)
 
     if torch.distributed.get_rank() == 0:
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project="Pruning", 
-            name=args.model.replace('/', '_'),
-            # track hyperparameters and run metadata
-            config=args,
-        )
+        # wandb.init(
+        #     # set the wandb project where this run will be logged
+        #     project="Pruning", 
+        #     name=args.model.replace('/', '_'),
+        #     # track hyperparameters and run metadata
+        #     config=args,
+        # )
+        # Generate a timestamp (e.g., 20260316_104209)
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Clean up the model name so it's safe for a file path
+        safe_model_name = args.model.replace('/', '_')
+        
+        # Store the unique path in args so other functions can use it
+        args.log_file = os.path.join(args.output_dir, f"log_{safe_model_name}_{current_time}.txt")
+        
+        with open(args.log_file, "w") as f:
+            f.write(f"Starting training for {args.model}\n")
+            f.write(f"Config: {json.dumps(vars(args), indent=2)}\n")
+            f.write("-" * 50 + "\n")
     device = torch.device(args.device)
 
     if args.use_deterministic_algorithms:
@@ -553,9 +584,14 @@ def main(args):
                 'misc/epoch': epoch,
             }
             if model_ema: log_content['val/ema_acc1'] = ema_acc
+            # try:
+            #     wandb.log(log_content)
+            # except: pass
             try:
-                wandb.log(log_content)
-            except: pass
+                with open(args.log_file, "a") as f:
+                    f.write("VALIDATION: " + json.dumps(log_content) + "\n")
+            except Exception as e:
+                print(f"Failed to write validation to log file: {e}")
 
         if args.output_dir:
             checkpoint = {
@@ -595,7 +631,7 @@ def get_args_parser(add_help=True):
     )
     parser.add_argument("--epochs", default=100, type=int, metavar="N", help="number of total epochs to run")
     parser.add_argument(
-        "-j", "--workers", default=2, type=int, metavar="N", help="number of data loading workers (default: 16)"
+        "-j", "--workers", default=8, type=int, metavar="N", help="number of data loading workers (default: 16)"
     )
     parser.add_argument("--opt", default="adamw", type=str, help="optimizer")
     parser.add_argument("--lr", default=0.0005, type=float, help="initial learning rate")
